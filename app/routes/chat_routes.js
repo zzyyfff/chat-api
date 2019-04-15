@@ -17,15 +17,22 @@ const recipientNotFound = customErrors.recipientNotFound
 // check if attempting to start a chat with self
 const chatWithSelf = customErrors.chatWithSelf
 
+// only participants can request to show a chat
+const requireParticipation = customErrors.requireParticipation
+
 // we'll use this function to send 404 when non-existant document is requested
 const handle404 = customErrors.handle404
+
 // we'll use this function to send 401 when a user tries to modify a resource
 // that's owned by someone else
-const requireOwnership = customErrors.requireOwnership
+// *************
+// const requireOwnership = customErrors.requireOwnership
 
 // this is middleware that will remove blank fields from `req.body`, e.g.
 // { chat: { title: '', text: 'foo' } } -> { chat: { text: 'foo' } }
-const removeBlanks = require('../../lib/remove_blank_fields')
+// *************
+// const removeBlanks = require('../../lib/remove_blank_fields')
+
 // passing this as a second argument to `router.<verb>` will make it
 // so that a token MUST be passed for that route to be available
 // it will also set `req.user`
@@ -58,7 +65,7 @@ router.get('/chats/:id', requireToken, (req, res, next) => {
     .then(handle404)
     // if `findById` is succesful, respond with 200 and "chat" JSON
     .then(chat => {
-      requireOwnership(req, chat)
+      requireParticipation(req, chat)
       return res.status(200).json({ chat: chat.toObject() })
     })
     // if an error occurs, pass it to the handler
@@ -104,44 +111,44 @@ router.post('/chats', requireToken, (req, res, next) => {
     .catch(next)
 })
 
-// UPDATE
-// PATCH /chats/5a7db6c74d55bc51bdf39793
-router.patch('/chats/:id', requireToken, removeBlanks, (req, res, next) => {
-  // if the client attempts to change the `owner` property by including a new
-  // owner, prevent that by deleting that key/value pair
-  delete req.body.chat.owner
-
-  Chat.findById(req.params.id)
-    .then(handle404)
-    .then(chat => {
-      // pass the `req` object and the Mongoose record to `requireOwnership`
-      // it will throw an error if the current user isn't the owner
-      requireOwnership(req, chat)
-
-      // pass the result of Mongoose's `.update` to the next `.then`
-      return chat.update(req.body.chat)
-    })
-    // if that succeeded, return 204 and no JSON
-    .then(() => res.sendStatus(204))
-    // if an error occurs, pass it to the handler
-    .catch(next)
-})
-
-// DESTROY
-// DELETE /chats/5a7db6c74d55bc51bdf39793
-router.delete('/chats/:id', requireToken, (req, res, next) => {
-  Chat.findById(req.params.id)
-    .then(handle404)
-    .then(chat => {
-      // throw an error if current user doesn't own `chat`
-      requireOwnership(req, chat)
-      // delete the chat ONLY IF the above didn't throw
-      chat.remove()
-    })
-    // send back 204 and no content if the deletion succeeded
-    .then(() => res.sendStatus(204))
-    // if an error occurs, pass it to the handler
-    .catch(next)
-})
+// // UPDATE
+// // PATCH /chats/5a7db6c74d55bc51bdf39793
+// router.patch('/chats/:id', requireToken, removeBlanks, (req, res, next) => {
+//   // if the client attempts to change the `owner` property by including a new
+//   // owner, prevent that by deleting that key/value pair
+//   delete req.body.chat.owner
+//
+//   Chat.findById(req.params.id)
+//     .then(handle404)
+//     .then(chat => {
+//       // pass the `req` object and the Mongoose record to `requireOwnership`
+//       // it will throw an error if the current user isn't the owner
+//       requireOwnership(req, chat)
+//
+//       // pass the result of Mongoose's `.update` to the next `.then`
+//       return chat.update(req.body.chat)
+//     })
+//     // if that succeeded, return 204 and no JSON
+//     .then(() => res.sendStatus(204))
+//     // if an error occurs, pass it to the handler
+//     .catch(next)
+// })
+//
+// // DESTROY
+// // DELETE /chats/5a7db6c74d55bc51bdf39793
+// router.delete('/chats/:id', requireToken, (req, res, next) => {
+//   Chat.findById(req.params.id)
+//     .then(handle404)
+//     .then(chat => {
+//       // throw an error if current user doesn't own `chat`
+//       requireOwnership(req, chat)
+//       // delete the chat ONLY IF the above didn't throw
+//       chat.remove()
+//     })
+//     // send back 204 and no content if the deletion succeeded
+//     .then(() => res.sendStatus(204))
+//     // if an error occurs, pass it to the handler
+//     .catch(next)
+// })
 
 module.exports = router
