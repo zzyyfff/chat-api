@@ -6,6 +6,8 @@ const cors = require('cors')
 
 // require route files
 const exampleRoutes = require('./app/routes/example_routes')
+const chatRoutes = require('./app/routes/chat_routes')
+// const messageRoutes = require('./app/routes/message_routes')
 const userRoutes = require('./app/routes/user_routes')
 
 // require error handling middleware
@@ -59,6 +61,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 // register route files
 app.use(exampleRoutes)
+app.use(chatRoutes)
+// app.use(messageRoutes)
 app.use(userRoutes)
 
 // register error handling middleware
