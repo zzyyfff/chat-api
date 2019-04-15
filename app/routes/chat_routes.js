@@ -5,6 +5,7 @@ const passport = require('passport')
 
 // pull in Mongoose model for chats and users
 const Chat = require('../models/chat')
+const Message = require('../models/message')
 const User = require('../models/user')
 
 // this is a collection of methods that help us detect situations when we need
@@ -62,11 +63,19 @@ router.get('/chats', requireToken, (req, res, next) => {
 router.get('/chats/:id', requireToken, (req, res, next) => {
   // req.params.id will be set based on the `:id` in the route
   Chat.findById(req.params.id)
+    // .then(console.log)
     .then(handle404)
     // if `findById` is succesful, respond with 200 and "chat" JSON
     .then(chat => {
-      requireParticipation(req, chat)
-      return res.status(200).json({ chat: chat.toObject() })
+      return requireParticipation(req, chat)
+    })
+    .then(chat => {
+      Message.find({ chat: chat }).sort('createdAt').populate('owner')
+        .then(messages => messages.map(message => message.toObject()))
+        .then(messages => {
+          return res.status(200).json({ chat: {...chat.toObject(), messages: messages} })
+        })
+        .catch(next)
     })
     // if an error occurs, pass it to the handler
     .catch(next)
