@@ -11,6 +11,12 @@ const User = require('../models/user')
 // to throw a custom error
 const customErrors = require('../../lib/custom_errors')
 
+// check if no returned users
+const recipientNotFound = customErrors.recipientNotFound
+
+// check if attempting to start a chat with self
+const chatWithSelf = customErrors.chatWithSelf
+
 // we'll use this function to send 404 when non-existant document is requested
 const handle404 = customErrors.handle404
 // we'll use this function to send 401 when a user tries to modify a resource
@@ -62,44 +68,40 @@ router.get('/chats/:id', requireToken, (req, res, next) => {
 // CREATE
 // POST /chats
 router.post('/chats', requireToken, (req, res, next) => {
-  Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] })
-    .then(chats => {
-      if (chats.length === 0) {
-        // chat doesn't exist, try to create it!
-        User.find({ username: req.body.chat.with })
-          .then(users => {
-            if (users.length === 0) {
-              // recipient not found, fail to create
-              console.error('recipient not found')
-            } else {
-              // recipient found!
-              if (users[0].id === req.user.id) {
-                console.error('Cannot chat with yourself')
-              } else {
-                // ready to create a new chat!
-                console.log('ready to create a new chat with', users[0].username, '!!')
-              }
-            }
-          })
-      } else {
-        console.log('=CHAT EXISTS=')
-        return chats
-      }
+  // first, defend against notexistant users and chatting with self
+  User.find({ username: req.body.chat.with })
+    .then(recipientNotFound)
+    .then(users => chatWithSelf(req, users))
+    .then(users => {
+      // ready to have a chat!
+      // check to see if one exists already
+      Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] })
+        .then(chats => {
+          // if chat doesn't exist, make one and send it to client
+          if (chats.length === 0) {
+            // set first user of new chat to be current user
+            // second user to be the found user
+            // and remove 'with' property before creation
+            req.body.chat.user1 = req.user.id
+            req.body.chat.user2 = users[0].id
+            delete req.body.chat.with
+
+            // create new chat
+            Chat.create(req.body.chat)
+            // respond to succesful `create` with status 201 and JSON of new "chat"
+              .then(chat => {
+                res.status(201).json({ chat: chat.toObject() })
+              })
+              .catch(next)
+          } else {
+          // if chat already exists, then send it to the client
+            console.log('=CHAT EXISTS=')
+            res.status(201).json({ chat: chats[0].toObject() })
+          }
+        })
+        .catch(next)
     })
     .catch(next)
-
-  // // set first user of new chat to be current user
-  // req.body.chat.user1 = req.user.id
-  //
-  // Chat.create(req.body.chat)
-  //   // respond to succesful `create` with status 201 and JSON of new "chat"
-  //   .then(chat => {
-  //     res.status(201).json({ chat: chat.toObject() })
-  //   })
-  //   // if an error occurs, pass it off to our error handler
-  //   // the error handler needs the error message and the `res` object so that it
-  //   // can send an error message back to the client
-  //   .catch(next)
 })
 
 // UPDATE
