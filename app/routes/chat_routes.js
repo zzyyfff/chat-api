@@ -62,7 +62,7 @@ router.get('/chats', requireToken, (req, res, next) => {
 // GET /chats/5a7db6c74d55bc51bdf39793
 router.get('/chats/:id', requireToken, (req, res, next) => {
   // req.params.id will be set based on the `:id` in the route
-  Chat.findById(req.params.id)
+  Chat.findById(req.params.id).populate('user1').populate('user2')
     // .then(console.log)
     .then(handle404)
     // if `findById` is succesful, respond with 200 and "chat" JSON

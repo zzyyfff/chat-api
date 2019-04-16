@@ -37,7 +37,7 @@ const router = express.Router()
 // GET /messages
 router.get('/messages', requireToken, (req, res, next) => {
   // make sure requester is a participant
-  Chat.findById(req.body.message.chat)
+  Chat.findById(req.body.message.chat).populate('user1').populate('user2')
     .then(chat => requireParticipation(req, chat))
     .catch(next)
 
@@ -73,7 +73,7 @@ router.get('/messages/:id', requireToken, (req, res, next) => {
 // POST /messages
 router.post('/messages', requireToken, (req, res, next) => {
   // make sure sender is a participant
-  Chat.findById(req.body.message.chat)
+  Chat.findById(req.body.message.chat).populate('user1').populate('user2')
     .then(chat => requireParticipation(req, chat))
     .catch(next)
 
