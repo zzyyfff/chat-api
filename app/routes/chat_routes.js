@@ -45,7 +45,7 @@ const router = express.Router()
 // INDEX
 // GET /chats
 router.get('/chats', requireToken, (req, res, next) => {
-  Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] })
+  Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] }).populate('user1').populate('user2')
     .then(chats => {
       // `chats` will be an array of Mongoose documents
       // we want to convert each one to a POJO, so we use `.map` to
