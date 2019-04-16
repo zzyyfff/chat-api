@@ -30,7 +30,55 @@ Interested in playing with the code or contributing? Read on.
 1.  Ensure that you have nodemon installed by running `npm install -g nodemon`
 1.  Ensure the server can run properly by running `npm run server`
 1.  `git add` and `git commit` your changes.
-1.  For deployment, you can follow GA's deployment guide: https://git.generalassemb.ly/ga-wdi-boston/express-api-deployment-guide
+
+#### Deploying to Heroku
+
+Begin inside the root directory of your application.
+
+1. Run `heroku create` in the command line in the root of the API to
+create a new (blank) app on Heroku.
+1. Commit to your local master branch
+1. Push your latest code to Heroku (`git push heroku master`)
+1. Setting up mLab on heroku:
+  + Run heroku addons:create with mongolab:sandbox
+`$ heroku addons:create mongolab:sandbox`
+  + The first time you run the above command you may see a message like this:
+  ```
+  Creating mongolab:sandbox on ⬢ pacific-cliffs-91276... !
+ ▸    Please verify your account to install this add-on plan (please enter a credit card) For more information, see
+ ▸    https://devcenter.heroku.com/categories/billing Verify now at https://heroku.com/verify
+ ```
+ + You'll need to go to that URL, enter in your credit card information and then re-run the command again. This time you should see something like:
+```
+Creating mongolab:sandbox on ⬢ pacific-cliffs-91276... free
+Welcome to mLab.  Your new subscription is being created and will be available
+shortly. Please consult the mLab Add-on Admin UI to check on its progress.
+Created mongolab-cubed-11237 as MONGODB_URI
+Use heroku addons:docs mongolab to view documentation
+```
+  + Now you can log into your heroku dashboard, go to add-ons and click the mlab link. This will bring you to your mlab database.
+  + If you already have an mLab account connected to your heroku account, you may see the second message and skip having to enter your credit card information.
+  + Either way, if you see this output, it worked, and you can resume the following deployment steps.
+1. in terminal, run: `git push heroku master`  (should build your site)
+1. due to the first line of code in the `server.js` file, the default
+deployment environment will be `production`
+1. in terminal, run: `echo SECRET_KEY=$(openssl rand -base64 66 | tr -d '\n')`
+this should generate a secret_key
+1. in the terminal run:
+`heroku config:set SECRET_KEY=<copy and paste secret_key generated from last command>`.
+It should start with “SECRET_KEY= and a span of about 40 randomized characters”
+1. you need to set your CLIENT_ORIGIN so that your deployed API will ONLY
+accept requests from the correct domain. IF you're client is deployed on Github,
+your ORIGIN will be:
+      `https://<% github username %>.github.io`
+1. Set your client ORIGIN by:
+      `heroku config:set CLIENT_ORIGIN="https://<% github username %>.github.io"`
+1. You should have three config variables set in heroku
+(`heroku>settings>config vars`): MONGODB_URI, SECRET_KEY, CLIENT_ORIGIN
+1. Once all three of these are set, run in terminal: `heroku restart`
+1. Then in terminal, run: `heroku open`
+
+A full list of Heroku commands can be accessed by running `heroku --help`
 
 ## Planning and Development
 
