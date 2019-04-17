@@ -91,7 +91,20 @@ router.post('/chats', requireToken, (req, res, next) => {
     .then(users => {
       // ready to have a chat!
       // check to see if one exists already
-      Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] })
+      Chat.find({
+        $or:
+        [{ $and:
+          [
+            { user1: req.user.id },
+            { user2: users[0].id }
+          ] },
+        { $and:
+          [
+            { user1: users[0].id },
+            { user2: req.user.id }
+          ]
+        }]
+      })
         .then(chats => {
           // if chat doesn't exist, make one and send it to client
           if (chats.length === 0) {
