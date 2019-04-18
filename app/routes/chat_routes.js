@@ -45,7 +45,11 @@ const router = express.Router()
 // INDEX
 // GET /chats
 router.get('/chats', requireToken, (req, res, next) => {
-  Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] }).populate('user1').populate('user2')
+  Chat.find({ $or: [{user1: req.user.id}, {user2: req.user.id}] })
+    .sort('-updatedAt')
+    .populate('user1', 'username _id')
+    .populate('user2', 'username _id')
+    .populate('lastMessage')
     .then(chats => {
       // `chats` will be an array of Mongoose documents
       // we want to convert each one to a POJO, so we use `.map` to
@@ -62,7 +66,10 @@ router.get('/chats', requireToken, (req, res, next) => {
 // GET /chats/5a7db6c74d55bc51bdf39793
 router.get('/chats/:id', requireToken, (req, res, next) => {
   // req.params.id will be set based on the `:id` in the route
-  Chat.findById(req.params.id).populate('user1').populate('user2')
+  Chat.findById(req.params.id)
+    .populate('user1', 'username _id')
+    .populate('user2', 'username _id')
+    .populate('lastMessage')
     // .then(console.log)
     .then(handle404)
     // if `findById` is succesful, respond with 200 and "chat" JSON
@@ -70,7 +77,7 @@ router.get('/chats/:id', requireToken, (req, res, next) => {
       return requireParticipation(req, chat)
     })
     .then(chat => {
-      Message.find({ chat: chat }).sort('createdAt').populate('owner')
+      Message.find({ chat: chat }).sort('createdAt').populate('owner', 'username _id')
         .then(messages => messages.map(message => message.toObject()))
         .then(messages => {
           return res.status(200).json({ chat: {...chat.toObject(), messages: messages} })
@@ -124,7 +131,6 @@ router.post('/chats', requireToken, (req, res, next) => {
               .catch(next)
           } else {
           // if chat already exists, then send it to the client
-            console.log('=CHAT EXISTS=')
             res.status(201).json({ chat: chats[0].toObject() })
           }
         })
